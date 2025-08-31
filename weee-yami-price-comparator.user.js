@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Weee vs. Yami Price Comparator
 // @namespace    https://github.com/Zhenghao-Dai/Weee-vs-Yami-Price-Comparator
-// @version      1.1
+// @version      1.2
 // @description  Compares prices between Weee and Yamibuy on their product pages, and provides a link to the cheaper option.
 // @author       Zhenghao Dai
 // @match        *://*.sayweee.com/*
@@ -30,13 +30,14 @@
             productPageIdentifier: '/product/',
             searchPageIdentifier: '/search',
             productTitleSelector: 'h1',
-            searchResultItemSelector: '[data-testid="wid-product-card-container"]',
+            searchResultItemSelector: 'a[data-testid="wid-product-card-container"]',
             searchResultNameSelector: '[data-testid="wid-product-card-title"]',
             searchResultPriceSelector: '[data-testid="wid-product-card-price"]',
             getSearchUrl: (name) => `https://www.yami.com/zh/search?q=${encodeURIComponent(name)}`,
             competitorName: 'Yami',
-            productToSearchKey: 'productToSearch',
-            resultKey: 'yamiResult'
+            productToSearchKey: 'priceComparatorProductToSearch',
+            resultKey: 'priceComparatorResult',
+            priceCleaner: (priceText) => priceText.replace(/[^\d.]/g, '')
         },
         yami: {
             name: 'Yami',
@@ -44,13 +45,14 @@
             productPageIdentifier: '/p/',
             searchPageIdentifier: '/search',
             productTitleSelector: 'h1',
-            searchResultItemSelector: '.item-card',
-            searchResultNameSelector: '[data-qa-itemcard-name-txt]',
+            searchResultItemSelector: '.search-items .item-card',
+            searchResultNameSelector: '.item-title a',
             searchResultPriceSelector: '[data-qa-itemcard-price-txt]',
             getSearchUrl: (name) => `https://www.sayweee.com/zh/search/${encodeURIComponent(name)}?keyword=${encodeURIComponent(name)}&trigger_type=search_active`,
             competitorName: 'Weee!',
-            productToSearchKey: 'weeeProductToSearch',
-            resultKey: 'weeeResult'
+            productToSearchKey: 'priceComparatorProductToSearch',
+            resultKey: 'priceComparatorResult',
+            priceCleaner: (priceText) => priceText.replace(/[^\d.]/g, '')
         }
     };
 
@@ -134,29 +136,63 @@
         }, 500);
     }
 
-    function initSearchPage(config) {
+    function initWeeeSearchPage(config) {
         if (GM_getValue(config.productToSearchKey)) {
+            let timeoutId = setTimeout(() => {
+                GM_setValue(config.resultKey, { error: `No products found on ${config.name}.` });
+                window.close();
+            }, 10000);
+
             const observer = new MutationObserver((mutations, obs) => {
                 const firstItem = document.querySelector(config.searchResultItemSelector);
                 if (firstItem) {
                     const itemNameElement = firstItem.querySelector(config.searchResultNameSelector);
                     const priceElement = firstItem.querySelector(config.searchResultPriceSelector);
-                    const urlElement = firstItem.closest('a') || firstItem; // Handle cases where the item is the link
 
-                    if (itemNameElement && priceElement && urlElement) {
+                    if (itemNameElement && priceElement) {
                         const result = {
                             name: itemNameElement.innerText.trim(),
-                            price: priceElement.innerText.trim(),
-                            url: urlElement.href
+                            price: config.priceCleaner(priceElement.innerText),
+                            url: firstItem.href
                         };
                         GM_setValue(config.resultKey, result);
+                        clearTimeout(timeoutId);
                         obs.disconnect();
                         window.close();
                     }
                 }
             });
             observer.observe(document.body, { childList: true, subtree: true });
-            setTimeout(() => GM_setValue(config.resultKey, { error: `No products found on ${config.name}.` }), 10000);
+        }
+    }
+
+    function initYamiSearchPage(config) {
+        if (GM_getValue(config.productToSearchKey)) {
+            let timeoutId = setTimeout(() => {
+                GM_setValue(config.resultKey, { error: `No products found on ${config.name}.` });
+                window.close();
+            }, 10000);
+
+            const observer = new MutationObserver((mutations, obs) => {
+                const firstItem = document.querySelector(config.searchResultItemSelector);
+                if (firstItem) {
+                    const itemNameElement = firstItem.querySelector(config.searchResultNameSelector);
+                    const priceElement = firstItem.querySelector(config.searchResultPriceSelector);
+
+                    if (itemNameElement && priceElement) {
+                        const result = {
+                            name: itemNameElement.innerText.trim(),
+                            price: config.priceCleaner(priceElement.innerText),
+                            url: itemNameElement.href
+                        };
+                        GM_setValue(config.resultKey, result);
+                        clearTimeout(timeoutId);
+                        obs.disconnect();
+                        window.close();
+                    }
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
         }
     }
 
@@ -164,13 +200,13 @@
     const currentUrl = window.location.href;
     if (currentUrl.includes(SITES.weee.url)) {
         if (currentUrl.includes(SITES.weee.searchPageIdentifier)) {
-            initSearchPage(SITES.yami); // We are on Weee search, looking for a Yami product
+            initWeeeSearchPage(SITES.weee);
         } else {
             initProductPage(SITES.weee);
         }
     } else if (currentUrl.includes(SITES.yami.url)) {
         if (currentUrl.includes(SITES.yami.searchPageIdentifier)) {
-            initSearchPage(SITES.weee); // We are on Yami search, looking for a Weee product
+            initYamiSearchPage(SITES.yami);
         } else {
             initProductPage(SITES.yami);
         }
