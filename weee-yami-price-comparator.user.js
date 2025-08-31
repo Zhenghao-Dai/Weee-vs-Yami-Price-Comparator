@@ -1,17 +1,24 @@
 // ==UserScript==
-// @name         Weee vs. Yami Price Comparator (Refactored)
-// @namespace    http://tampermonkey.net/
-// @version      4.0
-// @description  Compares prices between Weee and Yamibuy on their product pages.
-// @author       You
+// @name         Weee vs. Yami Price Comparator
+// @namespace    https://github.com/Zhenghao-Dai/Weee-vs-Yami-Price-Comparator
+// @version      1.1
+// @description  Compares prices between Weee and Yamibuy on their product pages, and provides a link to the cheaper option.
+// @author       Zhenghao Dai
 // @match        *://*.sayweee.com/*
 // @match        *://*.yami.com/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=sayweee.com
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
 // @grant        GM_openInTab
 // @grant        window.close
+// @homepage     https://github.com/Zhenghao-Dai/Weee-vs-Yami-Price-Comparator
+// @supportURL   https://github.com/Zhenghao-Dai/Weee-vs-Yami-Price-Comparator/issues
+// @updateURL    https://raw.githubusercontent.com/Zhenghao-Dai/Weee-vs-Yami-Price-Comparator/main/weee-yami-price-comparator.user.js
+// @downloadURL  https://raw.githubusercontent.com/Zhenghao-Dai/Weee-vs-Yami-Price-Comparator/main/weee-yami-price-comparator.user.js
+// @license      GPL-3.0-or-later
 // ==/UserScript==
+
 
 (function() {
     'use strict';
